@@ -17,8 +17,8 @@ from pydantic import BaseModel, Field
 
 google_places = GooglePlacesTool()
 
-
-gmaps = GoogleMaps(os.getenv("GPLACES_API_KEY"))
+GPLACES_API_KEY = AIzaSyDnSsDTBOAj5AFokjbyAp-lqXReCHnUm0Y
+gmaps = GoogleMaps(GPLACES_API_KEY)
 
 
 class DirectionsInput(BaseModel):
