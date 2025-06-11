@@ -34,7 +34,7 @@ if defined _OLD_CODEPAGE (
 )
 
 set OPENAI_API_KEY=sk-4d1b2c0f-3e6a-4f5c-bb8c-7d9e0f8a1b2c
-set GPLACES_API_KEY = AIzaSyDnSsDTBOAj5AFokjbyAp-lqXReCHnUm0Y
+set GPLACES_API_KEY = 
 set PG_PORT = 5432
 set PG_DB = condo_gpt
 set PG_USER = postgres
