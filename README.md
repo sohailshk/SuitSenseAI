@@ -32,7 +32,7 @@
 ### 1. 🔹 Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/suitsense-ai.git
+git clone https://github.com/sohailshk/suitsense-ai.git
 cd suitsense-ai
 ```
 
@@ -47,7 +47,7 @@ source gpt_env/bin/activate
 -- From PostgreSQL shell
 CREATE DATABASE condo_gpt;
 CREATE USER readonly_user WITH PASSWORD 'password';
-GRANT CONNECT ON DATABASE condo_gpt TO readonly_user;
+GRANT CONNECT ON DATABASE suitsense_AI TO readonly_user;
 GRANT USAGE ON SCHEMA public TO readonly_user;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO readonly_user;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO readonly_user;
@@ -64,7 +64,7 @@ export FLASK_SECRET="your_secret"
 export PG_USER="readonly_user"
 export PG_PASSWORD="password"
 export PG_PORT=5432
-export PG_DB="condo_gpt"
+export PG_DB="suitsense_AI"
 ```
 
 ### 4. 📃 Load Sample Data
