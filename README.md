@@ -110,6 +110,10 @@ Navigate to [http://localhost:5000](http://localhost:5000)
 ```
 
 ---
+![image](https://github.com/user-attachments/assets/c5308b96-7832-49b7-8e42-39d684f9941a)
+![image](https://github.com/user-attachments/assets/964185b1-21d4-4dc7-a414-c36f216a8d02)
+![image](https://github.com/user-attachments/assets/4d8ce226-89bc-4b30-92d2-26995dcbff46)
+
 
 ## 📁 Project Structure
 
