@@ -1,6 +1,6 @@
 # SuitSense AI
 
-**SuitSense AI** (formerly Condo GPT) is an intelligent assistant designed to revolutionize how real estate agents and investors analyze condominium data in Miami. Using the power of **Natural Language Processing (NLP)**, SuitSense AI allows non-technical users to perform deep data queries, generate insights, and visualize market trends without writing a single line of code.
+**SuitSense AI** is an intelligent assistant designed to revolutionize how real estate agents and investors analyze condominium data in Miami. Using the power of **Natural Language Processing (NLP)**, SuitSense AI allows non-technical users to perform deep data queries, generate insights, and visualize market trends without writing a single line of code.
 
 ---
 
