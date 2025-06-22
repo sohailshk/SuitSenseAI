@@ -1,11 +1,20 @@
 from flask import Flask,render_template,request,session
 from uuid import uuid4
-from main import process_question
+from main import process_question, db
 import os
 
 app = Flask(__name__)
 
-app.secret_key = os.getenv("FLASK_SECRET")
+app.secret_key = os.getenv("FLASK_SECRET", "fallback-secret-key-for-dev")
+
+# Add health check endpoint
+@app.route('/health')
+def health_check():
+    return {
+        "status": "healthy", 
+        "database_connected": db is not None,
+        "message": "SuitSenseAI is running!"
+    }
 
 # Set a maximum content length for the request
 MAX_CONTENT_LENGTH = 3

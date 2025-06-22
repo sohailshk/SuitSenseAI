@@ -31,9 +31,18 @@ POSTGRES_PASSWORD = os.getenv("PG_PASSWORD")
 POSTGRES_PORT = os.getenv("PG_PORT")
 POSTGRES_DB = os.getenv("PG_DB")
 
-connection_string = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:{POSTGRES_PORT}/{POSTGRES_DB}"
-
-db = SQLDatabase.from_uri(connection_string)
+# Initialize database connection with error handling
+db = None
+try:
+    if all([POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_PORT, POSTGRES_DB]):
+        connection_string = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:{POSTGRES_PORT}/{POSTGRES_DB}"
+        db = SQLDatabase.from_uri(connection_string)
+        print("✅ Database connected successfully!")
+    else:
+        print("⚠️ Database credentials not found. Running without database.")
+except Exception as e:
+    print(f"⚠️ Database connection failed: {e}")
+    print("App will run without database functionality.")
 
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.0-flash-exp",
@@ -44,9 +53,11 @@ llm = ChatGoogleGenerativeAI(
 
 gmaps = GoogleMaps(os.getenv("GPLACES_API_KEY"))
 
+# Setup system message with database info if available
+table_names = db.get_usable_table_names() if db else []
 
 prefix = SQL_PREFIX.format(
-    table_names=db.get_usable_table_names(),
+    table_names=table_names,
     marker_boilerplate=marker_boilerplate,
     holding_period_boilerplate=holding_period_boilerplate,
     two_bed_holding_period_boilerplate=two_bed_holding_period_boilerplate,
@@ -65,6 +76,7 @@ def query_as_list(db, query):
     return list(set(res))
 
 
+# Setup tools and agent with database if available
 tools = setup_tools(db, llm)
 
 # Create the agent with proper syntax
@@ -165,6 +177,10 @@ def detect_malicious_code(code):
     return False
 
 def process_question(prompted_question, conversation_history):
+    # Check if database is available
+    if not db:
+        return [process_markdown("⚠️ **Database not connected.** Please set up your PostgreSQL database and environment variables to enable full functionality. For now, I can help with general questions about real estate.")]
+    
     context = "\n".join(
         [
             f"Q: {entry['question']}\nA: {entry['answer']}"

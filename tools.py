@@ -86,43 +86,52 @@ def query_as_list(db, query):
 
 
 def setup_tools(db, llm):
-    try:
-        # Try to get addresses and alt_names from the database
-        addresses = query_as_list(db, "SELECT address FROM core_condobuilding")
-        alt_names = query_as_list(db, "SELECT alt_name FROM core_condobuilding")
-        
-        # Create vector database if we have data
-        if addresses or alt_names:
-            vector_db = FAISS.from_texts(
-                alt_names + addresses, 
-                GoogleGenerativeAIEmbeddings(
-                    model="models/embedding-001",
-                    google_api_key=os.getenv("GEMINI_API_KEY")
-                )
-            )
-            retriever = vector_db.as_retriever(search_kwargs={"k": 5})
-            description = """Use to look up values to filter on. Input is an approximate spelling of the proper noun, output is \
-            valid proper nouns. Use the noun most similar to the search."""
-            retriever_tool = create_retriever_tool(
-                retriever,
-                name="search_proper_nouns",
-                description=description,
-            )
-        else:
-            # Create a dummy retriever if no data
-            retriever_tool = None
-    except Exception as e:
-        print(f"Warning: Could not load building data from database: {e}")
-        print("Continuing without building search functionality...")
-        retriever_tool = None
+    tools = []
+    retriever_tool = None
     
-    toolkit = SQLDatabaseToolkit(db=db, llm=llm)
-    tools = toolkit.get_tools()
+    # Only try to access database if it exists
+    if db:
+        try:
+            # Try to get addresses and alt_names from the database
+            addresses = query_as_list(db, "SELECT address FROM core_condobuilding")
+            alt_names = query_as_list(db, "SELECT alt_name FROM core_condobuilding")
+            
+            # Create vector database if we have data
+            if addresses or alt_names:
+                vector_db = FAISS.from_texts(
+                    alt_names + addresses, 
+                    GoogleGenerativeAIEmbeddings(
+                        model="models/embedding-001",
+                        google_api_key=os.getenv("GEMINI_API_KEY")
+                    )
+                )
+                retriever = vector_db.as_retriever(search_kwargs={"k": 5})
+                description = """Use to look up values to filter on. Input is an approximate spelling of the proper noun, output is \
+                valid proper nouns. Use the noun most similar to the search."""
+                retriever_tool = create_retriever_tool(
+                    retriever,
+                    name="search_proper_nouns",
+                    description=description,
+                )
+        except Exception as e:
+            print(f"Warning: Could not load building data from database: {e}")
+            print("Continuing without building search functionality...")
+    else:
+        print("No database connection - running without database tools")
+    
+    # Add SQL tools only if database is available
+    if db:
+        try:
+            toolkit = SQLDatabaseToolkit(db=db, llm=llm)
+            tools.extend(toolkit.get_tools())
+        except Exception as e:
+            print(f"Warning: Could not create SQL tools: {e}")
     
     # Only add retriever tool if it was successfully created
     if retriever_tool:
         tools.append(retriever_tool)
     
+    # Add Google services tools (these don't require database)
     tools.append(google_places)
     tools.append(directions_tool)
     tools.append(google_maps_geocoding)
