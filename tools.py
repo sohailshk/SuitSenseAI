@@ -10,16 +10,15 @@ from langchain.agents.agent_toolkits import create_retriever_tool
 from langchain.tools import BaseTool
 from langchain_community.agent_toolkits import SQLDatabaseToolkit
 from langchain_community.agent_toolkits.sql.toolkit import SQLDatabaseToolkit
-from langchain_community.tools import GooglePlacesTool
+from langchain_google_community import GooglePlacesTool
 from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from pydantic import BaseModel, Field
+from typing import Type
 
-google_places = GooglePlacesTool()
-
-GPLACES_API_KEY = AIzaSyDnSsDTBOAj5AFokjbyAp-lqXReCHnUm0Y
+GPLACES_API_KEY = os.getenv("GPLACES_API_KEY")
 gmaps = GoogleMaps(GPLACES_API_KEY)
-
+google_places = GooglePlacesTool()
 
 class DirectionsInput(BaseModel):
     origin: str = Field(..., description="The starting point address or coordinates")
@@ -27,11 +26,13 @@ class DirectionsInput(BaseModel):
         ..., description="The destination point address or coordinates"
     )
 
+class GeocodingInput(BaseModel):
+    address: str = Field(..., description="The address to convert to coordinates")
 
 class GeocodingTool(BaseTool):
-    name = "google_maps_geocoding"
-    description = "Useful for converting addresses into geographic coordinates."
-    args_schema = DirectionsInput
+    name: str = "google_maps_geocoding"
+    description: str = "Useful for converting addresses into geographic coordinates."
+    args_schema: Type[BaseModel] = GeocodingInput
 
     def _run(self, address):
         try:
@@ -49,11 +50,11 @@ class GeocodingTool(BaseTool):
 
 
 class DirectionsTool(BaseTool):
-    name = "google_maps_directions"
-    description = (
+    name: str = "google_maps_directions"
+    description: str = (
         "Useful for finding travel distances and directions between two locations."
     )
-    args_schema = DirectionsInput
+    args_schema: Type[BaseModel] = DirectionsInput
 
     def _run(self, origin, destination):
         try:
@@ -85,20 +86,43 @@ def query_as_list(db, query):
 
 
 def setup_tools(db, llm):
-    addresses = query_as_list(db, "SELECT address FROM core_condobuilding")
-    alt_names = query_as_list(db, "SELECT alt_name FROM core_condobuilding")
-    vector_db = FAISS.from_texts(alt_names + addresses, OpenAIEmbeddings())
-    retriever = vector_db.as_retriever(search_kwargs={"k": 5})
-    description = """Use to look up values to filter on. Input is an approximate spelling of the proper noun, output is \
-    valid proper nouns. Use the noun most similar to the search."""
-    retriever_tool = create_retriever_tool(
-        retriever,
-        name="search_proper_nouns",
-        description=description,
-    )
+    try:
+        # Try to get addresses and alt_names from the database
+        addresses = query_as_list(db, "SELECT address FROM core_condobuilding")
+        alt_names = query_as_list(db, "SELECT alt_name FROM core_condobuilding")
+        
+        # Create vector database if we have data
+        if addresses or alt_names:
+            vector_db = FAISS.from_texts(
+                alt_names + addresses, 
+                GoogleGenerativeAIEmbeddings(
+                    model="models/embedding-001",
+                    google_api_key=os.getenv("GEMINI_API_KEY")
+                )
+            )
+            retriever = vector_db.as_retriever(search_kwargs={"k": 5})
+            description = """Use to look up values to filter on. Input is an approximate spelling of the proper noun, output is \
+            valid proper nouns. Use the noun most similar to the search."""
+            retriever_tool = create_retriever_tool(
+                retriever,
+                name="search_proper_nouns",
+                description=description,
+            )
+        else:
+            # Create a dummy retriever if no data
+            retriever_tool = None
+    except Exception as e:
+        print(f"Warning: Could not load building data from database: {e}")
+        print("Continuing without building search functionality...")
+        retriever_tool = None
+    
     toolkit = SQLDatabaseToolkit(db=db, llm=llm)
     tools = toolkit.get_tools()
-    tools.append(retriever_tool)
+    
+    # Only add retriever tool if it was successfully created
+    if retriever_tool:
+        tools.append(retriever_tool)
+    
     tools.append(google_places)
     tools.append(directions_tool)
     tools.append(google_maps_geocoding)

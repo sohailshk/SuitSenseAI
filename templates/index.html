@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuitSense AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background-color: #ffffff;
+            color: #343541;
+            transition: all 0.3s ease;
+        }
+
+        body.dark-mode {
+            background-color: #343541;
+            color: #ececf1;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        body.dark-mode .header {
+            border-bottom-color: #565869;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.7;
+        }
+
+        .dark-mode-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: 1px solid #d9d9e3;
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        body.dark-mode .dark-mode-toggle {
+            border-color: #565869;
+            color: #ececf1;
+        }
+
+        .dark-mode-toggle:hover {
+            background-color: #f7f7f8;
+        }
+
+        body.dark-mode .dark-mode-toggle:hover {
+            background-color: #40414f;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        .message {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: slideIn 0.3s ease forwards;
+        }
+
+        @keyframes slideIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .user-message {
+            background-color: #f7f7f8;
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-left: 20%;
+            border: 1px solid #e5e5e5;
+        }
+
+        body.dark-mode .user-message {
+            background-color: #40414f;
+            border-color: #565869;
+        }
+
+        .ai-message {
+            background-color: #ffffff;
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-right: 20%;
+            border: 1px solid #e5e5e5;
+        }
+
+        body.dark-mode .ai-message {
+            background-color: #444654;
+            border-color: #565869;
+        }
+
+        .input-section {
+            padding: 20px;
+            border-top: 1px solid #e5e5e5;
+            background-color: #ffffff;
+        }
+
+        body.dark-mode .input-section {
+            border-top-color: #565869;
+            background-color: #343541;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        #messageInput {
+            width: 100%;
+            min-height: 50px;
+            max-height: 150px;
+            padding: 12px 16px;
+            border: 2px solid #d9d9e3;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: none;
+            background-color: #ffffff;
+            color: #343541;
+            transition: all 0.2s ease;
+        }
+
+        body.dark-mode #messageInput {
+            background-color: #40414f;
+            border-color: #565869;
+            color: #ececf1;
+        }
+
+        #messageInput:focus {
+            outline: none;
+            border-color: #10a37f;
+            box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.1);
+        }
+
+        #messageInput::placeholder {
+            color: #8e8ea0;
+        }
+
+        body.dark-mode #messageInput::placeholder {
+            color: #8e8ea0;
+        }
+
+        .send-button {
+            background-color: #10a37f;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 80px;
+        }
+
+        .send-button:hover:not(:disabled) {
+            background-color: #0d8968;
+        }
+
+        .send-button:disabled {
+            background-color: #d9d9e3;
+            cursor: not-allowed;
+        }
+
+        body.dark-mode .send-button:disabled {
+            background-color: #565869;
+        }
+
+        .clear-button {
+            background: none;
+            border: 1px solid #d9d9e3;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            color: #343541;
+            transition: all 0.2s ease;
+        }
+
+        body.dark-mode .clear-button {
+            border-color: #565869;
+            color: #ececf1;
+        }
+
+        .clear-button:hover {
+            background-color: #f7f7f8;
+        }
+
+        body.dark-mode .clear-button:hover {
+            background-color: #40414f;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading-dots {
+            display: inline-block;
+        }
+
+        .loading-dots::after {
+            content: '';
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0% { content: ''; }
+            25% { content: '.'; }
+            50% { content: '..'; }
+            75% { content: '...'; }
+            100% { content: ''; }
+        }
+
+        .chart-container {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f7f7f8;
+            border-radius: 8px;
+            border: 1px solid #e5e5e5;
+        }
+
+        body.dark-mode .chart-container {
+            background-color: #40414f;
+            border-color: #565869;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e5e5e5;
+        }
+
+        body.dark-mode table {
+            background-color: #40414f;
+            border-color: #565869;
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        body.dark-mode th, body.dark-mode td {
+            border-bottom-color: #565869;
+        }
+
+        th {
+            background-color: #f7f7f8;
+            font-weight: 600;
+        }
+
+        body.dark-mode th {
+            background-color: #444654;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        pre {
+            background-color: #f7f7f8;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            padding: 16px;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
+        }
+
+        body.dark-mode pre {
+            background-color: #2d2d2d;
+            border-color: #565869;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 10px;
+            }
+            
+            .user-message {
+                margin-left: 10%;
+            }
+            
+            .ai-message {
+                margin-right: 10%;
+            }
+            
+            .input-container {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .dark-mode-toggle {
+                position: relative;
+                top: 0;
+                right: 0;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="dark-mode-toggle" onclick="toggleDarkMode()">🌓 Toggle Theme</button>
+            <h1>SuitSense AI</h1>
+            <p>Your Intelligent Real Estate Assistant</p>
+        </div>
+
+        <div class="chat-container" id="chatContainer">
+            {% if result %}
+            <div class="ai-message message">
+                {% for content in result %}
+                    {{ content|safe }}
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="loading-dots">Thinking</div>
+        </div>
+
+        <div class="input-section">
+            <form method="post" id="chatForm">
+                <div class="input-container">
+                    <div class="input-wrapper">
+                        <textarea 
+                            name="question" 
+                            id="messageInput" 
+                            placeholder="Ask me about real estate data, market trends, or property analysis..."
+                            required
+                        ></textarea>
+                    </div>
+                    <button type="submit" class="send-button" id="sendButton">Send</button>
+                    <button type="button" class="clear-button" onclick="clearConversation()">🔄 Clear</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Auto-resize textarea
+        const messageInput = document.getElementById('messageInput');
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+        });
+
+        // Handle form submission
+        document.getElementById('chatForm').addEventListener('submit', function(e) {
+            const input = document.getElementById('messageInput');
+            const sendButton = document.getElementById('sendButton');
+            const loading = document.getElementById('loading');
+            
+            if (input.value.trim()) {
+                // Add user message to chat
+                addUserMessage(input.value.trim());
+                
+                // Show loading
+                sendButton.disabled = true;
+                sendButton.textContent = 'Sending...';
+                loading.style.display = 'block';
+                
+                // Auto-scroll to bottom
+                setTimeout(() => {
+                    document.getElementById('chatContainer').scrollTop = 
+                        document.getElementById('chatContainer').scrollHeight;
+                }, 100);
+            }
+        });
+
+        // Handle Enter key (submit) and Shift+Enter (new line)
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                document.getElementById('chatForm').dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // Add user message to chat
+        function addUserMessage(message) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'user-message message';
+            messageDiv.textContent = message;
+            chatContainer.appendChild(messageDiv);
+        }
+
+        // Clear conversation
+        function clearConversation() {
+            if (confirm('Are you sure you want to clear the conversation?')) {
+                const form = document.createElement('form');
+                form.method = 'post';
+                form.innerHTML = '<input type="hidden" name="sign_out" value="true">';
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        // Dark mode toggle
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+        }
+
+        // Load dark mode preference
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+        }
+
+        // Auto-focus on input
+        window.addEventListener('load', function() {
+            document.getElementById('messageInput').focus();
+        });
+
+        // Hide loading after page loads
+        window.addEventListener('load', function() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('sendButton').disabled = false;
+            document.getElementById('sendButton').textContent = 'Send';
+        });
+    </script>
+</body>
+</html>

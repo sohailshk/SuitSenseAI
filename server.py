@@ -35,10 +35,21 @@ def index():
             return render_template('index.html', result = result)
         question = request.form['question']
         conversation_history = get_conversation_history()
-        result = process_question(question)
-        add_to_conversation_history(question, result)
+        result = process_question(question, conversation_history)
+        
+        # Convert result list to string for conversation history
+        result_text = ""
+        if result:
+            for item in result:
+                if hasattr(item, '__html__'):  # It's a Markup object
+                    result_text += str(item)
+                else:
+                    result_text += str(item)
+        
+        add_to_conversation_history(question, result_text)
     return render_template('index.html', result = result, gmaps_api_key = os.getenv("GPLACE_API_KEY"))
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)

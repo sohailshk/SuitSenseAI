@@ -6,7 +6,7 @@ import markdown
 from googlemaps import Client as GoogleMaps
 from langchain_community.utilities.sql_database import SQLDatabase
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.prebuilt import create_react_agent
 from markupsafe import Markup
 
@@ -35,7 +35,12 @@ connection_string = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost
 
 db = SQLDatabase.from_uri(connection_string)
 
-llm = ChatOpenAI(model="gpt-4o-mini")
+llm = ChatGoogleGenerativeAI(
+    model="gemini-2.0-flash-exp",
+    google_api_key=os.getenv("GEMINI_API_KEY"),
+    temperature=0.1,
+    convert_system_message_to_human=True
+)
 
 gmaps = GoogleMaps(os.getenv("GPLACES_API_KEY"))
 
@@ -60,13 +65,10 @@ def query_as_list(db, query):
     return list(set(res))
 
 
-addresses = query_as_list(db, "SELECT address FROM core_condobuilding")
-alt_names = query_as_list(db, "SELECT alt_name FROM core_condobuilding")
-
-
 tools = setup_tools(db, llm)
 
-agent_executor = create_react_agent(llm, tools, messages_modifier=system_message)
+# Create the agent with proper syntax
+agent = create_react_agent(llm, tools)
 
 
 def print_sql_1(sql):
@@ -174,32 +176,87 @@ def process_question(prompted_question, conversation_history):
     {context}
 
     New question: {prompted_question}
-
-    Please answer the new question, taking into account the context from the previous conversation if relevant.
+    
+    
+    Always provide a complete answer with actual data, not just SQL queries.
     """
-    prompt = consolidated_prompt if conversation_history else prompted_question
-
+    prompt = consolidated_prompt if conversation_history else f"{prompted_question}\n\nRemember: You MUST execute any SQL queries you create using the sql_db_query tool, don't just show the query. Always provide a complete answer with actual data."
+    
     content = []
-    for s in agent_executor.stream({"messages": [HumanMessage(content=prompt)]}):
-
-        for msg in s.get("agent", {}).get("messages", []):
-            for call in msg.tool_calls:
-                if sql := call.get("args", {}).get("query", None):
-                    print(print_sql_1(sql))
-
-            print(msg.content)
-            html, stripped_text, code = extract_and_remove_html(msg.content)
-            if code:
-                # # ----- Checking for Malicious Code
+    all_responses = []
+      # Properly invoke the agent with both system message and user prompt
+    messages = [system_message, HumanMessage(content=prompt)]
+    
+    try:
+        print(f"Processing question: {prompted_question}")
+        
+        # Use invoke instead of stream for more reliable results
+        result = agent.invoke({"messages": messages})
+        
+        if result and "messages" in result:
+            # Get the final response from the agent
+            final_messages = result["messages"]
+            
+            # Find the last AI message with content
+            for msg in reversed(final_messages):
+                if hasattr(msg, 'content') and msg.content and msg.content.strip():
+                    print(f"Final agent response: {msg.content}")
+                    
+                    # Extract and process HTML/code
+                    html, stripped_text, code = extract_and_remove_html(msg.content)
+                    
+                    if code:
+                        # Check for malicious patterns before executing
+                        if not detect_malicious_code(code):
+                            try:
+                                exec(code)
+                                print("Code executed successfully")
+                            except Exception as e:
+                                print(f"Error executing code: {e}")
+                    
+                    # Add processed content
+                    if stripped_text.strip():
+                        content.append(process_markdown(stripped_text))
+                    if html:
+                        content.append(html)
+                    break
+            
+            # If no content found, check all messages
+            if not content:
+                all_content = []
+                for msg in final_messages:
+                    if hasattr(msg, 'content') and msg.content and msg.content.strip():
+                        all_content.append(msg.content)
                 
-                # Check for malicious patterns before executing
-                if not detect_malicious_code(code):
-                    exec(code)
-
-                # # ----- Checking for Malicious Code
-            content.append(process_markdown(stripped_text))
-            if html:
-                content.append(html)
+                if all_content:
+                    combined_content = "\n\n".join(all_content)
+                    html, stripped_text, code = extract_and_remove_html(combined_content)
+                    
+                    if code:
+                        if not detect_malicious_code(code):
+                            try:
+                                exec(code)
+                                print("Code executed successfully")
+                            except Exception as e:
+                                print(f"Error executing code: {e}")
+                    
+                    if stripped_text.strip():
+                        content.append(process_markdown(stripped_text))
+                    if html:
+                        content.append(html)
+        
+        # If still no content, provide fallback
+        if not content:
+            content.append(process_markdown("I apologize, but I didn't receive a proper response. Please try rephrasing your question."))
+            
         print("----")
+        
+    except Exception as e:
+        print(f"Error in agent processing: {e}")
+        content.append(process_markdown(f"Sorry, I encountered an error: {str(e)}"))
 
+    # Ensure we always return something
+    if not content:
+        content.append(process_markdown("I'm processing your request. Please wait a moment and try again."))
+    
     return content
