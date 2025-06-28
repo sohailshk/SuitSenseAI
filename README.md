@@ -31,15 +31,19 @@ SuitSenseAI is a cutting-edge **conversational AI platform** that revolutionizes
 
 ---
 
-## 🚀 Quick Demo
+## 💡 Usage Examples
 
-**Ask anything about real estate:**
-- *"What's the average holding period for 2-bedroom units in Brickell?"*
-- *"Show me a map of all buildings with nearby schools"*
-- *"Generate a sales volume chart for the last 5 years"*
-- *"Find the closest elementary school to 123 Main Street"*
-- *"Create a PDF report of market trends in Miami"*
-
+### Queries
+```
+"Which buildings has the highest sale in collins"
+"can u put this into HTML Table"
+"Can u please generate a graph of this for me to analyze"
+"can u please add a third row with avergae median sale"
+"can u also show me the closest school distance to each of this building"
+"can u show me on map the nearby schools around this property"
+"can u also add a new column with average holding period"
+"provide me a pdf report of the whole table to download"
+```
 ---
 
 ## 🏗️ Architecture & Technology Stack
@@ -165,20 +169,7 @@ Visit `http://localhost:5000` and start asking questions! 🎉
 
 ---
 
-## 💡 Usage Examples
 
-### Basic Queries
-```
-"Which buildings has the highest sale in collins"
-"can u put this into HTML Table"
-"Can u please generate a graph of this for me to analyze"
-"can u please add a third row with avergae median sale"
-"can u also show me the closest school distance to each of this building"
-"can u show me on map the nearby schools around this property"
-"can u also add a new column with average holding period"
-"provide me a pdf report of the whole table to download"
-```
----
 
 ## 🏗️ Project Structure
 
