@@ -169,32 +169,15 @@ Visit `http://localhost:5000` and start asking questions! 🎉
 
 ### Basic Queries
 ```
-"How many buildings are in Brickell?"
-"What's the average price per square foot in Miami Beach?"
-"Show me all 3-bedroom units sold last year"
+"Which buildings has the highest sale in collins"
+"can u put this into HTML Table"
+"Can u please generate a graph of this for me to analyze"
+"can u please add a third row with avergae median sale"
+"can u also show me the closest school distance to each of this building"
+"can u show me on map the nearby schools around this property"
+"can u also add a new column with average holding period"
+"provide me a pdf report of the whole table to download"
 ```
-
-### Advanced Analytics
-```
-"Calculate the holding period for luxury condos in Aventura"
-"Generate a sales volume trend chart for the past 5 years"
-"Find buildings with the highest appreciation rates"
-```
-
-### Visualizations
-```
-"Create a map showing all buildings and nearby schools"
-"Generate a bar chart of average prices by neighborhood"
-"Show me a pie chart of unit types in downtown"
-```
-
-### Reports
-```
-"Create a PDF market analysis report for Brickell"
-"Generate an investment summary for 2-bedroom units"
-"Produce a comparative analysis of luxury buildings"
-```
-
 ---
 
 ## 🏗️ Project Structure
