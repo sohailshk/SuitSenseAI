@@ -1,64 +1,64 @@
-from flask import Flask,render_template,request,session
-from uuid import uuid4
-from main import process_question, db
+# app.py
 import os
+from uuid import uuid4
+
+import sqlparse
+from flask import Flask, render_template, request, session
+from flask_cors import CORS
+
+from main import process_question
 
 app = Flask(__name__)
 
-app.secret_key = os.getenv("FLASK_SECRET", "fallback-secret-key-for-dev")
 
-# Add health check endpoint
-@app.route('/health')
-def health_check():
-    return {
-        "status": "healthy", 
-        "database_connected": db is not None,
-        "message": "SuitSenseAI is running!"
-    }
+app.secret_key = os.getenv("FLASK_SECRET")
 
-# Set a maximum content length for the request
-MAX_CONTENT_LENGTH = 3
-#if we dont have conv history in session then initialize as an empty array initially so we start recoeding 
+CORS(app, resources={r"/*": {"origins": "*"}})
+
+
+def format_sql(sql):
+    return sqlparse.format(sql, reindent=True, keyword_case="upper")
+
+
+MAX_CONTEXT_LENGTH = 3  # Number of previous exchanges to keep
+
+
 def get_conversation_history():
-    if 'conversation_history' not in session:
-        session['conversation_history'] = []
-    return session['conversation_history']
+    if "conversation_history" not in session:
+        session["conversation_history"] = []
+    return session["conversation_history"]
+
 
 def add_to_conversation_history(question, answer):
     history = get_conversation_history()
-    history.append({'question': question, 'answer': answer})
-    if len(history) > MAX_CONTENT_LENGTH:
+    history.append({"question": question, "answer": answer})
+    if len(history) > MAX_CONTEXT_LENGTH:
         history.pop(0)
-    session['conversation_history'] = history
+    session["conversation_history"] = history
 
-#for token management we use flask sessions to store conversation like a cookie
-@app.route('/',methods = ["GET","POST"])
+
+@app.route("/", methods=["GET", "POST"])
 def index():
     result = None
-
+    formatted_query = None
     if "user_id" not in session:
-        session['user_id'] = str(uuid4())
+        session["user_id"] = str(uuid4())
     if request.method == "POST":
         if request.form.get("sign_out", None):
             session.clear()
-            return render_template('index.html', result = result)
-        question = request.form['question']
+            return render_template("index.html", result=result, query=formatted_query)
+        question = request.form["question"]
         conversation_history = get_conversation_history()
         result = process_question(question, conversation_history)
-        
-        # Convert result list to string for conversation history
-        result_text = ""
-        if result:
-            for item in result:
-                if hasattr(item, '__html__'):  # It's a Markup object
-                    result_text += str(item)
-                else:
-                    result_text += str(item)
-        
-        add_to_conversation_history(question, result_text)
-    return render_template('index.html', result = result, gmaps_api_key = os.getenv("GPLACE_API_KEY"))
+        add_to_conversation_history(question, result)
+
+    return render_template(
+        "index.html",
+        gmaps_api_key=os.getenv("GPLACES_API_KEY"),
+        result=result,
+        query=formatted_query,
+    )
 
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+if __name__ == "__main__":
+    app.run(debug=True)

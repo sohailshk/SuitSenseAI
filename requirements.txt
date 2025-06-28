@@ -18,6 +18,7 @@ langsmith==0.4.1
 # Google APIs
 googlemaps==4.10.0
 google-generativeai==0.8.5
+google-genai==0.8.0
 google-auth==2.40.3
 
 # Vector database

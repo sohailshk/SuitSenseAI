@@ -31,33 +31,21 @@ POSTGRES_PASSWORD = os.getenv("PG_PASSWORD")
 POSTGRES_PORT = os.getenv("PG_PORT")
 POSTGRES_DB = os.getenv("PG_DB")
 
-# Initialize database connection with error handling
-db = None
-try:
-    if all([POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_PORT, POSTGRES_DB]):
-        connection_string = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:{POSTGRES_PORT}/{POSTGRES_DB}"
-        db = SQLDatabase.from_uri(connection_string)
-        print("✅ Database connected successfully!")
-    else:
-        print("⚠️ Database credentials not found. Running without database.")
-except Exception as e:
-    print(f"⚠️ Database connection failed: {e}")
-    print("App will run without database functionality.")
+connection_string = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:{POSTGRES_PORT}/{POSTGRES_DB}"
+
+db = SQLDatabase.from_uri(connection_string)
 
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.0-flash-exp",
     google_api_key=os.getenv("GEMINI_API_KEY"),
     temperature=0.1,
-    convert_system_message_to_human=True
 )
 
 gmaps = GoogleMaps(os.getenv("GPLACES_API_KEY"))
 
-# Setup system message with database info if available
-table_names = db.get_usable_table_names() if db else []
 
 prefix = SQL_PREFIX.format(
-    table_names=table_names,
+    table_names=db.get_usable_table_names(),
     marker_boilerplate=marker_boilerplate,
     holding_period_boilerplate=holding_period_boilerplate,
     two_bed_holding_period_boilerplate=two_bed_holding_period_boilerplate,
@@ -76,11 +64,14 @@ def query_as_list(db, query):
     return list(set(res))
 
 
-# Setup tools and agent with database if available
+addresses = query_as_list(db, "SELECT address FROM core_condobuilding")
+alt_names = query_as_list(db, "SELECT alt_name FROM core_condobuilding")
+
+
 tools = setup_tools(db, llm)
 
-# Create the agent with proper syntax
-agent = create_react_agent(llm, tools)
+# Create agent with system message as first message in conversation
+agent_executor = create_react_agent(llm, tools)
 
 
 def print_sql_1(sql):
@@ -177,10 +168,6 @@ def detect_malicious_code(code):
     return False
 
 def process_question(prompted_question, conversation_history):
-    # Check if database is available
-    if not db:
-        return [process_markdown("⚠️ **Database not connected.** Please set up your PostgreSQL database and environment variables to enable full functionality. For now, I can help with general questions about real estate.")]
-    
     context = "\n".join(
         [
             f"Q: {entry['question']}\nA: {entry['answer']}"
@@ -192,87 +179,34 @@ def process_question(prompted_question, conversation_history):
     {context}
 
     New question: {prompted_question}
-    
-    
-    Always provide a complete answer with actual data, not just SQL queries.
-    """
-    prompt = consolidated_prompt if conversation_history else f"{prompted_question}\n\nRemember: You MUST execute any SQL queries you create using the sql_db_query tool, don't just show the query. Always provide a complete answer with actual data."
-    
-    content = []
-    all_responses = []
-      # Properly invoke the agent with both system message and user prompt
-    messages = [system_message, HumanMessage(content=prompt)]
-    
-    try:
-        print(f"Processing question: {prompted_question}")
-        
-        # Use invoke instead of stream for more reliable results
-        result = agent.invoke({"messages": messages})
-        
-        if result and "messages" in result:
-            # Get the final response from the agent
-            final_messages = result["messages"]
-            
-            # Find the last AI message with content
-            for msg in reversed(final_messages):
-                if hasattr(msg, 'content') and msg.content and msg.content.strip():
-                    print(f"Final agent response: {msg.content}")
-                    
-                    # Extract and process HTML/code
-                    html, stripped_text, code = extract_and_remove_html(msg.content)
-                    
-                    if code:
-                        # Check for malicious patterns before executing
-                        if not detect_malicious_code(code):
-                            try:
-                                exec(code)
-                                print("Code executed successfully")
-                            except Exception as e:
-                                print(f"Error executing code: {e}")
-                    
-                    # Add processed content
-                    if stripped_text.strip():
-                        content.append(process_markdown(stripped_text))
-                    if html:
-                        content.append(html)
-                    break
-            
-            # If no content found, check all messages
-            if not content:
-                all_content = []
-                for msg in final_messages:
-                    if hasattr(msg, 'content') and msg.content and msg.content.strip():
-                        all_content.append(msg.content)
-                
-                if all_content:
-                    combined_content = "\n\n".join(all_content)
-                    html, stripped_text, code = extract_and_remove_html(combined_content)
-                    
-                    if code:
-                        if not detect_malicious_code(code):
-                            try:
-                                exec(code)
-                                print("Code executed successfully")
-                            except Exception as e:
-                                print(f"Error executing code: {e}")
-                    
-                    if stripped_text.strip():
-                        content.append(process_markdown(stripped_text))
-                    if html:
-                        content.append(html)
-        
-        # If still no content, provide fallback
-        if not content:
-            content.append(process_markdown("I apologize, but I didn't receive a proper response. Please try rephrasing your question."))
-            
-        print("----")
-        
-    except Exception as e:
-        print(f"Error in agent processing: {e}")
-        content.append(process_markdown(f"Sorry, I encountered an error: {str(e)}"))
 
-    # Ensure we always return something
-    if not content:
-        content.append(process_markdown("I'm processing your request. Please wait a moment and try again."))
-    
+    Please answer the new question, taking into account the context from the previous conversation if relevant.
+    """
+    prompt = consolidated_prompt if conversation_history else prompted_question
+
+    content = []
+    # Include system message with each request
+    messages = [system_message, HumanMessage(content=prompt)]
+    for s in agent_executor.stream({"messages": messages}):
+
+        for msg in s.get("agent", {}).get("messages", []):
+            for call in msg.tool_calls:
+                if sql := call.get("args", {}).get("query", None):
+                    print(print_sql_1(sql))
+
+            print(msg.content)
+            html, stripped_text, code = extract_and_remove_html(msg.content)
+            if code:
+                # # ----- Checking for Malicious Code
+                
+                # Check for malicious patterns before executing
+                if not detect_malicious_code(code):
+                    exec(code)
+
+                # # ----- Checking for Malicious Code
+            content.append(process_markdown(stripped_text))
+            if html:
+                content.append(html)
+        print("----")
+
     return content

@@ -1,9 +1,16 @@
-marker_boilerplate = """"var marker = new google.maps.Marker({
+marker_boilerplate = """var marker = new google.maps.marker.AdvancedMarkerElement({
 position: {lat: markerData.lat, lng: markerData.lng},
 map: map,
-title: markerData.name + ' - ' + markerData.address, 
-label: markerData.name
+title: markerData.name + ' - ' + markerData.address
 });
+
+// Add content to marker
+const content = document.createElement('div');
+content.innerHTML = markerData.name;
+content.style.color = '#1976d2';
+content.style.fontWeight = 'bold';
+content.style.fontSize = '12px';
+marker.content = content;
 """
 
 holding_period_boilerplate = """
@@ -102,25 +109,61 @@ FROM
 """
 
 javascript_map_boilerplate = """
-
 function initMap() {
+    // Check if Google Maps API is available
+    if (typeof google === 'undefined' || !google.maps) {
+        console.error('Google Maps API not loaded');
+        return;
+    }
+
     var locations = [
         // Building and school markers will be listed here
     ];
 
     var map = new google.maps.Map(document.getElementById('map'), {
         zoom: 13,
-        center: {lat: [average_lat], lng: [average_lng]}
+        center: {lat: [average_lat], lng: [average_lng]},
+        mapId: 'DEMO_MAP_ID' // Required for AdvancedMarkerElement
     });
 
+    var bounds = new google.maps.LatLngBounds();
+
     locations.forEach(function(location) {
-        var marker = new google.maps.Marker({
-            position: {lat: location.lat, lng: location.lng},
+        var position = {lat: location.lat, lng: location.lng};
+        
+        var marker = new google.maps.marker.AdvancedMarkerElement({
+            position: position,
             map: map,
-            label: location.label
+            title: location.label
         });
+        
+        // Create custom content for marker
+        const content = document.createElement('div');
+        content.innerHTML = location.label;
+        content.style.color = '#1976d2';
+        content.style.fontWeight = 'bold';
+        content.style.fontSize = '12px';
+        content.style.backgroundColor = 'white';
+        content.style.padding = '4px 8px';
+        content.style.borderRadius = '4px';
+        content.style.border = '1px solid #ccc';
+        marker.content = content;
+        
+        bounds.extend(position);
     });
+
+    // Fit map to show all markers
+    if (locations.length > 0) {
+        map.fitBounds(bounds);
+    }
 }
+
+// Initialize map when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('map')) {
+        initMap();
+    }
+});
 """
 
 building_marker_format_boilerplate = "{lat: [building.lat], lng: [building.lon], label: '[building.alt_name] - [building.address]'}"

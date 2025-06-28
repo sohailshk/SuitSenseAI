@@ -2,6 +2,7 @@ import ast
 import os
 import re
 from operator import itemgetter
+from typing import Optional, Type
 
 import markdown
 import reportlab
@@ -14,11 +15,12 @@ from langchain_google_community import GooglePlacesTool
 from langchain_community.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from pydantic import BaseModel, Field
-from typing import Type
 
-GPLACES_API_KEY = os.getenv("GPLACES_API_KEY")
-gmaps = GoogleMaps(GPLACES_API_KEY)
 google_places = GooglePlacesTool()
+
+
+gmaps = GoogleMaps(os.getenv("GPLACES_API_KEY"))
+
 
 class DirectionsInput(BaseModel):
     origin: str = Field(..., description="The starting point address or coordinates")
@@ -26,15 +28,17 @@ class DirectionsInput(BaseModel):
         ..., description="The destination point address or coordinates"
     )
 
+
 class GeocodingInput(BaseModel):
     address: str = Field(..., description="The address to convert to coordinates")
+
 
 class GeocodingTool(BaseTool):
     name: str = "google_maps_geocoding"
     description: str = "Useful for converting addresses into geographic coordinates."
     args_schema: Type[BaseModel] = GeocodingInput
 
-    def _run(self, address):
+    def _run(self, address: str) -> str:
         try:
             geocode_result = gmaps.geocode(address)
             if geocode_result:
@@ -56,7 +60,7 @@ class DirectionsTool(BaseTool):
     )
     args_schema: Type[BaseModel] = DirectionsInput
 
-    def _run(self, origin, destination):
+    def _run(self, origin: str, destination: str) -> str:
         try:
             print("DIRECTIONS API: ", origin, destination)
             directions_result = gmaps.directions(origin, destination, mode="driving")
@@ -86,52 +90,23 @@ def query_as_list(db, query):
 
 
 def setup_tools(db, llm):
-    tools = []
-    retriever_tool = None
-    
-    # Only try to access database if it exists
-    if db:
-        try:
-            # Try to get addresses and alt_names from the database
-            addresses = query_as_list(db, "SELECT address FROM core_condobuilding")
-            alt_names = query_as_list(db, "SELECT alt_name FROM core_condobuilding")
-            
-            # Create vector database if we have data
-            if addresses or alt_names:
-                vector_db = FAISS.from_texts(
-                    alt_names + addresses, 
-                    GoogleGenerativeAIEmbeddings(
-                        model="models/embedding-001",
-                        google_api_key=os.getenv("GEMINI_API_KEY")
-                    )
-                )
-                retriever = vector_db.as_retriever(search_kwargs={"k": 5})
-                description = """Use to look up values to filter on. Input is an approximate spelling of the proper noun, output is \
-                valid proper nouns. Use the noun most similar to the search."""
-                retriever_tool = create_retriever_tool(
-                    retriever,
-                    name="search_proper_nouns",
-                    description=description,
-                )
-        except Exception as e:
-            print(f"Warning: Could not load building data from database: {e}")
-            print("Continuing without building search functionality...")
-    else:
-        print("No database connection - running without database tools")
-    
-    # Add SQL tools only if database is available
-    if db:
-        try:
-            toolkit = SQLDatabaseToolkit(db=db, llm=llm)
-            tools.extend(toolkit.get_tools())
-        except Exception as e:
-            print(f"Warning: Could not create SQL tools: {e}")
-    
-    # Only add retriever tool if it was successfully created
-    if retriever_tool:
-        tools.append(retriever_tool)
-    
-    # Add Google services tools (these don't require database)
+    addresses = query_as_list(db, "SELECT address FROM core_condobuilding")
+    alt_names = query_as_list(db, "SELECT alt_name FROM core_condobuilding")
+    vector_db = FAISS.from_texts(alt_names + addresses, GoogleGenerativeAIEmbeddings(
+        model="models/embedding-001",
+        google_api_key=os.getenv("GEMINI_API_KEY")
+    ))
+    retriever = vector_db.as_retriever(search_kwargs={"k": 5})
+    description = """Use to look up values to filter on. Input is an approximate spelling of the proper noun, output is \
+    valid proper nouns. Use the noun most similar to the search."""
+    retriever_tool = create_retriever_tool(
+        retriever,
+        name="search_proper_nouns",
+        description=description,
+    )
+    toolkit = SQLDatabaseToolkit(db=db, llm=llm)
+    tools = toolkit.get_tools()
+    tools.append(retriever_tool)
     tools.append(google_places)
     tools.append(directions_tool)
     tools.append(google_maps_geocoding)
