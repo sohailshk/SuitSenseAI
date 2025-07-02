@@ -150,6 +150,11 @@ python server.py
 Visit `http://localhost:5000` and start asking questions! 🎉
 
 ---
+![image](https://github.com/user-attachments/assets/49d71be3-dd50-404b-a937-d24159167460)
+![image](https://github.com/user-attachments/assets/d7b0fa05-8d11-4dff-9b4c-1d62c6ec6832)
+![image](https://github.com/user-attachments/assets/2723eeb1-2f0e-414f-bd2e-3249e9db5189)
+![image](https://github.com/user-attachments/assets/2e5507df-e0ba-46a9-97ba-4fa6f411febf)
+
 
 ## 🔑 API Keys Setup
 
