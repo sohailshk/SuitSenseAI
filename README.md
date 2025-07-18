@@ -30,7 +30,14 @@ SuitSenseAI is a cutting-edge **conversational AI platform** that revolutionizes
 - 💬 **Memory-Aware** - Maintains conversation context for complex analysis
 
 ---
-
+<div>
+    <a href="https://www.loom.com/share/1181d9250f8847acb4107414a697bd71">
+      <p>SuitSenseAI - Google Chrome - 18 July 2025 - Watch Video</p>
+    </a>
+    <a href="https://www.loom.com/share/1181d9250f8847acb4107414a697bd71">
+      <img style="max-width:300px;" src="https://cdn.loom.com/sessions/thumbnails/1181d9250f8847acb4107414a697bd71-1d57ebd1b2361dca-full-play.gif">
+    </a>
+  </div>
 ## 💡 Usage Examples
 
 ### Queries
