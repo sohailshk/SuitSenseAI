@@ -16,9 +16,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from pydantic import BaseModel, Field
 
-google_places = GooglePlacesTool()
-
-
+google_places = GooglePlacesTool(gplaces_api_key=os.getenv("GPLACES_API_KEY"))
 gmaps = GoogleMaps(os.getenv("GPLACES_API_KEY"))
 
 

@@ -26,12 +26,17 @@ from prefix import SQL_PREFIX
 from tools import setup_tools
 
 # Update the following variables with your database credentials
-POSTGRES_USER = os.getenv("PG_USER")
-POSTGRES_PASSWORD = os.getenv("PG_PASSWORD")
-POSTGRES_PORT = os.getenv("PG_PORT")
-POSTGRES_DB = os.getenv("PG_DB")
-
-connection_string = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:{POSTGRES_PORT}/{POSTGRES_DB}"
+DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL:
+    connection_string = DATABASE_URL
+else:
+    # Fallback to individual credentials for local development
+    POSTGRES_USER = os.getenv("PG_USER")
+    POSTGRES_PASSWORD = os.getenv("PG_PASSWORD")
+    POSTGRES_HOST = os.getenv("PG_HOST", "localhost")
+    POSTGRES_PORT = os.getenv("PG_PORT")
+    POSTGRES_DB = os.getenv("PG_DB")
+    connection_string = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
 
 db = SQLDatabase.from_uri(connection_string)
 

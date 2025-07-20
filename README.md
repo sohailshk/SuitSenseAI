@@ -30,16 +30,28 @@ SuitSenseAI is a cutting-edge **conversational AI platform** that revolutionizes
 - 💬 **Memory-Aware** - Maintains conversation context for complex analysis
 
 ---
+<div>
+    <a href="https://www.loom.com/share/1181d9250f8847acb4107414a697bd71">
+      <p>SuitSenseAI_Demo - Watch Video</p>
+    </a>
+    <a href="https://www.loom.com/share/1181d9250f8847acb4107414a697bd71">
+      <img style="max-width:300px;" src="https://cdn.loom.com/sessions/thumbnails/1181d9250f8847acb4107414a697bd71-1d57ebd1b2361dca-full-play.gif">
+    </a>
+  </div>
 
-## 🚀 Quick Demo
+## 💡 Usage Examples
 
-**Ask anything about real estate:**
-- *"What's the average holding period for 2-bedroom units in Brickell?"*
-- *"Show me a map of all buildings with nearby schools"*
-- *"Generate a sales volume chart for the last 5 years"*
-- *"Find the closest elementary school to 123 Main Street"*
-- *"Create a PDF report of market trends in Miami"*
-
+### Queries
+```
+"Which buildings has the highest sale in collins"
+"can u put this into HTML Table"
+"Can u please generate a graph of this for me to analyze"
+"can u please add a third row with avergae median sale"
+"can u also show me the closest school distance to each of this building"
+"can u show me on map the nearby schools around this property"
+"can u also add a new column with average holding period"
+"provide me a pdf report of the whole table to download"
+```
 ---
 
 ## 🏗️ Architecture & Technology Stack
@@ -146,6 +158,11 @@ python server.py
 Visit `http://localhost:5000` and start asking questions! 🎉
 
 ---
+![image](https://github.com/user-attachments/assets/49d71be3-dd50-404b-a937-d24159167460)
+![image](https://github.com/user-attachments/assets/d7b0fa05-8d11-4dff-9b4c-1d62c6ec6832)
+![image](https://github.com/user-attachments/assets/2723eeb1-2f0e-414f-bd2e-3249e9db5189)
+![image](https://github.com/user-attachments/assets/2e5507df-e0ba-46a9-97ba-4fa6f411febf)
+
 
 ## 🔑 API Keys Setup
 
@@ -165,37 +182,7 @@ Visit `http://localhost:5000` and start asking questions! 🎉
 
 ---
 
-## 💡 Usage Examples
 
-### Basic Queries
-```
-"How many buildings are in Brickell?"
-"What's the average price per square foot in Miami Beach?"
-"Show me all 3-bedroom units sold last year"
-```
-
-### Advanced Analytics
-```
-"Calculate the holding period for luxury condos in Aventura"
-"Generate a sales volume trend chart for the past 5 years"
-"Find buildings with the highest appreciation rates"
-```
-
-### Visualizations
-```
-"Create a map showing all buildings and nearby schools"
-"Generate a bar chart of average prices by neighborhood"
-"Show me a pie chart of unit types in downtown"
-```
-
-### Reports
-```
-"Create a PDF market analysis report for Brickell"
-"Generate an investment summary for 2-bedroom units"
-"Produce a comparative analysis of luxury buildings"
-```
-
----
 
 ## 🏗️ Project Structure
 
